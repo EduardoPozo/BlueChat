@@ -13,9 +13,13 @@ Android application that allows chat over a peer-to-peer Bluetooth network
  - Added an ACK feature to the code to help confirm
 
 # Schedule/Goals
- - Automatic Reconnection to previously connected user
- - ACK feature to notify user of successful message transmission.
+ - ACK feature with timestamp.
  - Reliability feature to resend messages upon timeout or failure.
+ - Prevent bluechat from clearing chat history after device disconnect.
+ - Enable dynamic disconnect/reconnect feature.
+ 
+# Completed Goals
+ - ACK feature to notify user of successful message transmission.
 
 # Environment
  - Android Studio
