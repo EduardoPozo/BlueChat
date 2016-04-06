@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -55,12 +56,7 @@ public class BluetoothChatFragment extends Fragment {
     /**
      * Array adapter for the conversation thread
      */
-    private ArrayAdapter<String> mConversationArrayAdapter;
-
-    /**
-     * List backing array adapter
-     */
-    private ArrayList<String> mList;
+    private BluetoothArrayAdapter mConversationArrayAdapter;
 
     /**
      * String buffer for outgoing messages
@@ -150,8 +146,11 @@ public class BluetoothChatFragment extends Fragment {
     private void setupChat() {
         Log.d(TAG, "setupChat()");
 
+        //Initialize list backing array adapter
+        ArrayList<BluetoothChatMessage> mList = new ArrayList<>();
+
         // Initialize the array adapter for the conversation thread
-        mConversationArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.message);
+        mConversationArrayAdapter = new BluetoothArrayAdapter(getActivity(), R.layout.message, mList);
 
         mConversationView.setAdapter(mConversationArrayAdapter);
 
@@ -290,27 +289,29 @@ public class BluetoothChatFragment extends Fragment {
                     byte[] writeBuf = (byte[]) msg.obj;
                     // construct a string from the buffer
                     String writeMessage = new String(writeBuf);
+                    // Make sure this is user written message before adding to adapter
                     if(!writeMessage.equals("ack")) {
-                        mConversationArrayAdapter.add("Me:  " + writeMessage);
+                        BluetoothChatMessage bluetoothWriteMessage = new BluetoothChatMessage("Me:  " + writeMessage);
+                        mConversationArrayAdapter.add(bluetoothWriteMessage);
                     }
                     break;
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
                     String readMessage = new String(readBuf, 0, msg.arg1);
+                    BluetoothChatMessage bluetoothReadMessage = new BluetoothChatMessage(mConnectedDeviceName + ":  " + readMessage);
                     if(readMessage.equals("ack")) {
-                        //Get index of last message
+                        //Get index of last BluetoothChatMessage and set its ack to true
                         int lastMsgIndex = mConversationArrayAdapter.getCount() - 1;
-                        mConversationArrayAdapter.getItem(lastMsgIndex).concat(" - received");
-                                //+= "received";
-                                //.add(mConnectedDeviceName + " received your message.");
+                        mConversationArrayAdapter.getItem(lastMsgIndex).setAck(true);
+                        mConversationArrayAdapter.notifyDataSetChanged();
                     } else {
-                        mConversationArrayAdapter.add(mConnectedDeviceName + ":  " + readMessage);
+                        // If message is from other device, add it to the adapter and send ack
+                        mConversationArrayAdapter.add(bluetoothReadMessage);
                         byte[] sendAck = Constants.ACK.getBytes();
                         mChatService.write(sendAck);
                     }
                     break;
-
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
                     mConnectedDeviceName = msg.getData().getString(Constants.DEVICE_NAME);
